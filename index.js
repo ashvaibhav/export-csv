@@ -1,41 +1,49 @@
 const faker = require("faker");
 const fs = require("fs");
 
-const writeUsers = fs.createWriteStream("users.csv");
-writeUsers.write("id,username,avatar\n", "utf8");
+class DB {
+  constructor(userCount) {
+    this.userCount = userCount || 100;
+    this.currCount = 1;
+  }
+
+  hasMoreData() {
+    return this.currCount < this.userCount;
+  }
+
+  getNextData() {
+    const username = faker.internet.userName();
+    const avatar = faker.image.avatar();
+    const data = `${this.currCount},${username},${avatar}\n`;
+    this.currCount++;
+    return data;
+  }
+}
 
 function writeTenMillionUsers(writer, encoding, callback) {
-  let i = 10000000;
-  let id = 0;
+  const db = new DB(10000000);
+  write();
+
   function write() {
     let ok = true;
-    do {
-      i -= 1;
-      id += 1;
-      const data = dataStreamer(id);
-      if (i === 0) {
-        writer.write(data, encoding, callback);
-      } else {
-        // see if we should continue, or wait
-        // don't pass the callback, because we're not done yet.
-        ok = writer.write(data, encoding);
+    while (db.hasMoreData()) {
+      const data = db.getNextData();
+      ok = writer.write(data, encoding);
+      if (!ok) {
+        writer.once("drain", write);
+        break;
       }
-    } while (i > 0 && ok);
-    if (i > 0) {
-      // had to stop early!
-      // write some more once it drains
-      writer.once("drain", write);
+    }
+
+    if (ok) {
+      const data = db.getNextData();
+      writer.write(data, encoding, callback);
     }
   }
-  write();
 }
 
-function dataStreamer(id) {
-  const username = faker.internet.userName();
-  const avatar = faker.image.avatar();
-  const data = `${id},${username},${avatar}\n`;
-  return data;
-}
+const writeUsers = fs.createWriteStream("users.csv");
+writeUsers.write("id,username,avatar\n", "utf8");
 
 writeTenMillionUsers(writeUsers, "utf-8", () => {
   writeUsers.end();
