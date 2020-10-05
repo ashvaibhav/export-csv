@@ -1,4 +1,4 @@
-export default class Request {
+class Request {
   constructor() {
     this.events = {};
   }
@@ -13,3 +13,5 @@ export default class Request {
     }
   }
 }
+
+export { Request };

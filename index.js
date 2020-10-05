@@ -1,5 +1,21 @@
 const faker = require("faker");
 const fs = require("fs");
+class Request {
+  constructor() {
+    this.events = {};
+  }
+
+  on(eventId, callback) {
+    this.events[eventId] = callback;
+  }
+
+  emit(eventId, data) {
+    if (this.events[eventId]) {
+      this.events[eventId](data);
+    }
+  }
+}
+const request = new Request();
 
 class DB {
   constructor(userCount) {
@@ -28,8 +44,10 @@ function writeTenMillionUsers(writer, encoding, callback) {
     let ok = true;
     while (db.hasMoreData()) {
       const data = db.getNextData();
+      request.emit("data", data);
       ok = writer.write(data, encoding);
       if (!ok) {
+        request.emit("data", data);
         writer.once("drain", write);
         break;
       }
@@ -46,5 +64,6 @@ const writeUsers = fs.createWriteStream("users.csv");
 writeUsers.write("id,username,avatar\n", "utf8");
 
 writeTenMillionUsers(writeUsers, "utf-8", () => {
+  request.emit("end");
   writeUsers.end();
 });
