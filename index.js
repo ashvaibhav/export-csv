@@ -38,32 +38,35 @@ class DB {
 
 function writeTenMillionUsers(writer, encoding, callback) {
   const db = new DB(10000000);
+  backend.put(request);
   write();
 
   function write() {
-    let ok = true;
+    // let ok = true;
     while (db.hasMoreData()) {
       const data = db.getNextData();
       request.emit("data", data);
-      ok = writer.write(data, encoding);
-      if (!ok) {
-        request.emit("data", data);
-        writer.once("drain", write);
-        break;
-      }
+      // ok = writer.write(data, encoding);
+      // if (!ok) {
+      //   request.emit("data", data);
+      //   writer.once("drain", write);
+      //   break;
+      // }
     }
 
-    if (ok) {
-      const data = db.getNextData();
-      writer.write(data, encoding, callback);
-    }
+    request.emit("end");
+    callback();
+    // if (ok) {
+    //   const data = db.getNextData();
+    //   writer.write(data, encoding, callback);
+    // }
   }
 }
 
 const writeUsers = fs.createWriteStream("users.csv");
-writeUsers.write("id,username,avatar\n", "utf8");
+// writeUsers.write("id,username,avatar\n", "utf8");
 
 writeTenMillionUsers(writeUsers, "utf-8", () => {
-  request.emit("end");
-  writeUsers.end();
+  // request.emit("end");
+  // writeUsers.end();
 });
